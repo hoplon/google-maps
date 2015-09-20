@@ -1,8 +1,8 @@
 (ns hoplon.google.jsapi.maps
   (:refer-clojure :exclude [clj->js])
   (:require
-   [clojure.string :as string]
-   [hoplon.google.jsapi.loader :refer [queued ensure-api]]))
+    [clojure.string :as string]
+    [hoplon.google.jsapi.loader :refer [queued ensure-api]]))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
