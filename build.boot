@@ -4,7 +4,7 @@
                   [hoplon/boot-hoplon   "0.1.9"         :scope "test"]
                   [hoplon               "6.0.0-alpha10"]
                   [cljsjs/google-maps   "3.18-0"]
-                  [hoplon/google-loader "0.2.0-SNAPSHOT"]])
+                  [hoplon/google-loader "0.2.0"]])
 
 (require '[adzerk.bootlaces :refer :all]
          '[hoplon.boot-hoplon :refer :all])
