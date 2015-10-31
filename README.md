@@ -1,5 +1,5 @@
 # hoplon-google-maps
-Hoplon[hoplon] component for google maps
+[Hoplon][hoplon] component for google maps
 
 ## Dependency
 [](dependency)
