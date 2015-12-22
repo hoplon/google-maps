@@ -9,7 +9,7 @@
 (require '[adzerk.bootlaces :refer :all]
          '[hoplon.boot-hoplon :refer :all])
 
-(def +version+ "3.18.0-1")
+(def +version+ "3.18.0-2")
 
 (task-options!
  pom  {:project     'hoplon/google-maps
