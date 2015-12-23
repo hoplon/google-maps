@@ -19,7 +19,7 @@
     :else x))
 
 (defc  maps-version "3")
-(defc  maps-options {:other_params "sensor=false&libraries=geometry"})
+(defc  maps-options {:other_params "libraries=geometry"})
 
 (def ensure-maps
   (queued
@@ -146,13 +146,13 @@
                   InfoWindow   (.-InfoWindow maps)
                   LatLngBounds (.-LatLngBounds maps)
                   lat-lng      #(LatLng. (js/parseFloat %1) (js/parseFloat %2))
-                  opts         (cell= (let [{:keys [lat lon]} center]
-                                        (clj->js (merge {} map-opts {:center (lat-lng lat lon)}))))
+                  opts         (cell= (let [{:keys [lat lng]} center]
+                                        (clj->js (merge {} map-opts {:center (lat-lng lat lng)}))))
                   imap         (Map. elem @opts)
                   map-ctrls    (.-controls imap)
                   bounds       (cell= (with-let [b (LatLngBounds.)]
-                                        (doseq [{:keys [lat lon]} markers]
-                                          (.extend b (lat-lng lat lon)))))]
+                                        (doseq [{:keys [lat lng]} markers]
+                                          (.extend b (lat-lng lat lng)))))]
               (doseq [x map-callbacks]
                 (let [evt (rm-pfx (name (key x))) 
                       fun (val x)
@@ -191,7 +191,7 @@
               (cell= (when (and fit-pins (seq markers))
                        ((~(partial delay-until visible?)
                          #(.fitBounds imap bounds)))))
-              (cell-doseq [[i {:keys [lat lon info opts] :as pin}] (cell= (indexed markers))]
+              (cell-doseq [[i {:keys [lat lng info opts] :as pin}] (cell= (indexed markers))]
                 (let [marker  (Marker. (clj->js {}))
                       iwindow (InfoWindow. (clj->js {}))]
                   (doseq [x pin-callbacks]
@@ -204,7 +204,7 @@
                       (when @info (.open iwindow imap marker))))
                   (cell= (doto iwindow (.setContent (dom2str info)) .close))
                   (cell= (let [map (when lat imap)
-                               pos (when lat (lat-lng lat lon))
+                               pos (when lat (lat-lng lat lng))
                                opt (clj->js (merge {} opts {:map map :position pos}))]
                            (.close iwindow)
                            (.setOptions marker opt))))))))))))
