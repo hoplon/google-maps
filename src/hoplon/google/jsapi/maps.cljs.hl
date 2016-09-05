@@ -19,7 +19,7 @@
     :else x))
 
 (defc  maps-version "3")
-(defc  maps-options {:other_params "sensor=false&libraries=geometry"})
+(defc  maps-options {:other_params "libraries=geometry"})
 
 (def ensure-maps
   (queued
@@ -49,7 +49,7 @@
     (into
       []
       (map
-        #(assoc {} :lat (.lat (clj->js %)) :lon (.lng (clj->js %)))
+        #(assoc {} :lat (.lat (clj->js %)) :lng (.lng (clj->js %)))
         points))))
 
 (defn point-in-polygon [point path]
@@ -58,8 +58,8 @@
         Polygon           (.-Polygon maps)
         poly-lib          (.-poly (.-geometry maps))
         lat-lng           #(LatLng. (js/parseFloat %1) (js/parseFloat %2))
-        gon               (Polygon. (clj->js {:path (mapv #(lat-lng (:lat %) (:lon %)) path)})) 
-        pnt               (lat-lng (:lat point) (:lon point))
+        gon               (Polygon. (clj->js {:path (mapv #(lat-lng (:lat %) (:lng %)) path)}))
+        pnt               (lat-lng (:lat point) (:lng point))
         res               (.containsLocation poly-lib pnt gon)]
     res))
 
@@ -88,7 +88,7 @@
 
 (defelem google-map-control
   [attr kids]
-  {:position (keyword (:position attr)) :control kids})
+  (assoc {} :position (keyword (:position attr)) :controls kids))
 
 (defelem google-map [attr kids]
   (with-let [elem       (div (select-keys attr (keys (filter #(not= "hoplon.google.jsapi.maps" (namespace (key %))) attr))))]
@@ -99,6 +99,7 @@
           markers       (:hoplon.google.jsapi.maps/markers attr)
           polylines     (:hoplon.google.jsapi.maps/polylines attr)
           polygons      (:hoplon.google.jsapi.maps/polygons attr)
+          controls      (:hoplon.google.jsapi.maps/controls attr)
           mkfilter      #(fn [[x _]]
                            (let [ns (namespace x) nm (name x)]
                              (and (= "hoplon.google.jsapi.maps" ns)
@@ -144,67 +145,69 @@
                   Polyline     (.-Polyline maps)
                   Polygon      (.-Polygon maps)
                   InfoWindow   (.-InfoWindow maps)
+                  iw           (InfoWindow. (clj->js {}))
                   LatLngBounds (.-LatLngBounds maps)
                   lat-lng      #(LatLng. (js/parseFloat %1) (js/parseFloat %2))
-                  opts         (cell= (let [{:keys [lat lon]} center]
-                                        (clj->js (merge {} map-opts {:center (lat-lng lat lon)}))))
+                  opts         (cell= (let [{:keys [lat lng]} center]
+                                        (clj->js (merge {} map-opts {:center (lat-lng lat lng)}))))
                   imap         (Map. elem @opts)
                   map-ctrls    (.-controls imap)
                   bounds       (cell= (with-let [b (LatLngBounds.)]
-                                        (doseq [{:keys [lat lon]} markers]
-                                          (.extend b (lat-lng lat lon)))))]
+                                        (doseq [{:keys [lat lng]} markers]
+                                          (.extend b (lat-lng lat lng)))))]
               (doseq [x map-callbacks]
-                (let [evt (rm-pfx (name (key x))) 
+                (let [evt (rm-pfx (name (key x)))
                       fun (val x)
                       wrp (fn [& args] (apply fun imap args)) ]
                   (.addListener Event imap evt wrp)))
               (mapv #(layer (key %) (val %) imap) layers)
-              (doseq [x kids]
-                (let [pos (:position x) ctrls (:control x)]
-                  (doseq [ctrl ctrls]
-                    (.push
-                      (aget map-ctrls (pos control-positions))
-                      (div ctrl)))))
+              (doseq [x controls]
+                (let [pos (:position x) ctrls (:controls x) ]
+                  (.push
+                    (aget map-ctrls (pos control-positions))
+                    (div ctrls))))
               (cell-doseq [[i {:keys [path opts] :as pline}] (cell= (indexed polylines))]
                 (let [polyline  (Polyline. (clj->js {}))]
                   (doseq [x pln-callbacks]
-                    (let [evt (rm-pfx (name (key x))) 
+                    (let [evt (rm-pfx (name (key x)))
                           fun (val x)
                           wrp (fn [& args] (apply fun imap polyline pline args))]
                       (.addListener Event polyline evt wrp)))
                   (cell= (let [map  (when path imap)
-                               path (if path (mapv #(lat-lng (:lat %) (:lon %)) path) [])
+                               path (if path (mapv #(lat-lng (:lat %) (:lng %)) path) [])
                                opt  (clj->js (merge {} opts {:map map :path path}))]
                            (.setOptions polyline opt)))))
               (cell-doseq [[i {:keys [path opts] :as pgon}] (cell= (indexed polygons))]
                 (let [ polygon (Polygon. (clj->js {}))]
                   (doseq [x pgn-callbacks]
-                    (let [evt (rm-pfx (name (key x))) 
+                    (let [evt (rm-pfx (name (key x)))
                           fun (val x)
                           wrp (fn [& args] (apply fun imap polygon pgon args))]
                       (.addListener Event polygon evt wrp)))
                   (cell= (let [map  (when path imap)
-                               path (if path (mapv #(lat-lng (:lat %) (:lon %)) path) [])
+                               path (if path (mapv #(lat-lng (:lat %) (:lng %)) path) [])
                                opt  (clj->js (merge {} opts {:map map :path path}))]
                            (.setOptions polygon opt)))))
               (cell= (.setOptions imap opts))
+              (cell= (when (seq markers) (.trigger Event imap "resize")))
               (cell= (when (and fit-pins (seq markers))
                        ((~(partial delay-until visible?)
                          #(.fitBounds imap bounds)))))
-              (cell-doseq [[i {:keys [lat lon info opts] :as pin}] (cell= (indexed markers))]
+              (cell-doseq [[i {:keys [lat lng info opts] :as pin}] (cell= (indexed markers))]
                 (let [marker  (Marker. (clj->js {}))
-                      iwindow (InfoWindow. (clj->js {}))]
+                      info    (cell= info)]
                   (doseq [x pin-callbacks]
-                    (let [evt  (rm-pfx (name (key x))) 
+                    (let [evt  (rm-pfx (name (key x)))
                           fun  (val x)
-                          wrp  (fn [& args] (apply fun imap marker iwindow @pin args))]
+                          wrp  (fn [& args] (apply fun imap marker iw @pin args))]
                       (.addListener Event marker evt wrp)))
                   (.addListener Event marker "click"
                     (fn []
-                      (when @info (.open iwindow imap marker))))
-                  (cell= (doto iwindow (.setContent (dom2str info)) .close))
+                      (when @info
+                        (.setContent iw @info)
+                        (.open iw imap marker))))
                   (cell= (let [map (when lat imap)
-                               pos (when lat (lat-lng lat lon))
+                               pos (when lat (lat-lng lat lng))
                                opt (clj->js (merge {} opts {:map map :position pos}))]
-                           (.close iwindow)
+                           (.close iw)
                            (.setOptions marker opt))))))))))))
