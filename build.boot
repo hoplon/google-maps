@@ -7,7 +7,6 @@
                   [adzerk/cljs-console        "0.1.1"]
                   [cljsjs/google-maps         "3.18-1"]
                   [hoplon/google-loader       "0.2.0"]])
-
 (require '[adzerk.bootlaces :refer :all]
          '[hoplon.boot-hoplon :refer :all])
 
