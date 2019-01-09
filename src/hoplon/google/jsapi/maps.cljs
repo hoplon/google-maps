@@ -178,8 +178,7 @@
 
               ;;;;;;; Circles
               (cell-doseq [[i {:keys [opts] :as circ}] (cell= (indexed circles))]
-                (let [circle (Circle. (clj->js {}))
-                      _      (cell= (.log js/console (clj->js circ)))]
+                (let [circle    (Circle. (clj->js {}))]
                   (doseq [x cir-callbacks]
                     (let [evt (rm-pfx (name (key x)))
                           fun (val x)
@@ -187,7 +186,7 @@
                       (.addListener Event circle evt wrp)))
                   (cell=
                     ((~(partial delay-until visible?)
-                      #(let [map  imap
+                      #(let [map  (when (-> opts :center) imap)
                              opt  (clj->js (merge {} opts {:map map}))]
                       (.setOptions circle opt)))))))
 

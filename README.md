@@ -4,7 +4,7 @@
 ## Dependency
 [](dependency)
 ```clojure
-[rowtr/google-maps "3.18.6"] ;; latest release
+[rowtr/google-maps "3.18.8"] ;; latest release
 ```
 [](/dependency)
 
